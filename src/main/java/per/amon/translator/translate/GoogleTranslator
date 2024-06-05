@@ -1,0 +1,38 @@
+package per.amon.translator.translate;
+
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+
+import java.util.*;
+
+public class GoogleTranslator extends Translator {
+
+    @Override
+    public List<String> translate(List<String> words, String sourceLang, String targetLang) {
+        return GoogleTranslatorHelper.translate(words, sourceLang, targetLang);
+    }
+
+    @Override
+    public Set<String> getSupportedLanguages() {
+        if (supportedLanguages != null && !supportedLanguages.isEmpty()) {
+            return supportedLanguages;
+        } else {
+            supportedLanguages = new HashSet<>();
+        }
+        String request = GoogleTranslatorHelper.getSupportLaunguage();
+        // 解析JSON数据
+        JSONObject jsonResult = JSON.parseObject(request);
+        JSONArray languages = jsonResult.getJSONObject("data").getJSONArray("languages");
+
+        // 遍历JSONArray，提取并添加语言代码到Set中
+        for (int i = 0; i < languages.size(); i++) {
+            JSONObject language = languages.getJSONObject(i);
+            supportedLanguages.add(language.getString("language").toLowerCase());
+        }
+        // 下方语言可用，但接口没有
+        supportedLanguages.add("in");
+        supportedLanguages.add("nb");
+        return supportedLanguages;
+    }
+}
