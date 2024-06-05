@@ -1,0 +1,18 @@
+package per.amon.translator.translate;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+public class GptTranslator extends Translator {
+    @Override
+    public List<String> translate(List<String> words, String sourceLang, String targetLang) {
+
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Set<String> getSupportedLanguages() {
+        return Collections.emptySet();
+    }
+}
