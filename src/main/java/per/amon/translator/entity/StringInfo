@@ -1,0 +1,126 @@
+package per.amon.translator.entity;
+
+import per.amon.translator.Config;
+import per.amon.translator.utils.CommonUtils;
+import per.amon.translator.utils.LanguageUtils;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class StringInfo {
+    public String name;
+    private String value;
+    private String translatedValue;
+    private String replacedValue;
+    private boolean isTranslatable;
+    private boolean isSpecial = false;
+    private Map<String, String> attribute = new HashMap<>();
+
+    public StringInfo(String name) {
+        this.name = name;
+        isTranslatable = true;
+    }
+
+    public StringInfo(StringInfo defaultStringInfo) {
+        this.name = defaultStringInfo.name;
+        this.isTranslatable = defaultStringInfo.isTranslatable();
+        this.attribute = defaultStringInfo.getAttribute();
+        this.isSpecial = defaultStringInfo.isSpecial();
+    }
+
+
+    public void setValue(String value) {
+        if (CommonUtils.notNullOrEmpty(value)) {
+            if (Config.quoteMode == -1) {
+                if (value.startsWith("\"") && value.endsWith("\"") && value.length() > 1) {
+                    value = value.substring(1, value.length() - 1);
+                }
+            } else if (Config.quoteMode == 1) {
+                if (!value.startsWith("\"") || !value.endsWith("\"")) {
+                    value = "\"" + value + "\"";
+                }
+            }
+
+        }
+        this.value = value;
+        if (LanguageUtils.containSpecial(value)) {
+            setSpecial(true);
+        }
+    }
+
+    public void setTranslatedValue(String translatedValue) {
+        this.translatedValue = translatedValue;
+    }
+
+    public void setReplacedValue(String replacedValue) {
+        this.replacedValue = replacedValue;
+    }
+
+
+    public String getValue() {
+        return value;
+    }
+
+    public String getTranslatedValue() {
+        return translatedValue;
+    }
+
+    public String getReplacedValue() {
+        return replacedValue;
+    }
+
+    public String getFinalValue() {
+        String finalValue = value;
+        if (replacedValue != null){
+            finalValue = replacedValue;
+        } else if (translatedValue != null){
+            finalValue = translatedValue;
+        } else if (value != null){
+            finalValue =  value;
+        }
+
+        if (CommonUtils.notNullOrEmpty(finalValue) && Config.quoteMode != 0 && Config.quoteTransformMode !=0 ) {
+            // 如果两端有引号先去掉，之后对引号进行处理，最后再加引号
+            if (finalValue.startsWith("\"") && finalValue.endsWith("\"") && finalValue.length() > 1) {
+                String temp = finalValue.substring(1, finalValue.length() - 1);
+                temp = CommonUtils.replaceQuotes(temp);
+                finalValue = "\"" + temp + "\"";
+            } else {
+                finalValue = CommonUtils.replaceQuotes(finalValue);
+            }
+
+            finalValue = CommonUtils.replaceSingleQuotes(finalValue);
+
+        }
+
+        return finalValue;
+    }
+
+    public void setAttribute(Map<String, String> attribute) {
+        this.attribute = attribute;
+    }
+
+    public void putStringAttribute(String key, String value) {
+        attribute.put(key, value);
+    }
+
+    public Map<String, String> getAttribute() {
+        return attribute;
+    }
+
+    public void setTranslatable(boolean isTranslatable) {
+        this.isTranslatable = isTranslatable;
+    }
+
+    public boolean isTranslatable() {
+        return isTranslatable;
+    }
+
+    public void setSpecial(boolean isSpecial) {
+        this.isSpecial = isSpecial;
+    }
+
+    public boolean isSpecial() {
+        return isSpecial;
+    }
+}
