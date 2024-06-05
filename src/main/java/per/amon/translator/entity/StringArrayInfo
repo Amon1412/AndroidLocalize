@@ -1,0 +1,83 @@
+package per.amon.translator.entity;
+
+import per.amon.translator.utils.CommonUtils;
+import per.amon.translator.utils.LanguageUtils;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class StringArrayInfo {
+    public String name;
+    private StringInfo[] items;
+    private boolean isTranslatable;
+    private boolean isSpecial = false;
+    private Map<String, String> attribute = new HashMap<>();
+
+
+    public StringArrayInfo(String name) {
+        this.name = name;
+        isTranslatable = true;
+    }
+
+    public StringArrayInfo(StringArrayInfo defaultStringArrayInfo) {
+        this.name = defaultStringArrayInfo.name;
+        this.isTranslatable = defaultStringArrayInfo.isTranslatable();
+        this.attribute = defaultStringArrayInfo.getAttribute();
+        this.items = new StringInfo[defaultStringArrayInfo.getItems().length];
+        for (int i = 0; i < defaultStringArrayInfo.getItems().length; i++) {
+            this.items[i] = new StringInfo(defaultStringArrayInfo.getItems()[i]);
+        }
+        this.isSpecial = defaultStringArrayInfo.isSpecial();
+    }
+
+    public StringInfo[] getItems() {
+        return items;
+    }
+
+    public void setItems(StringInfo[] items) {
+        this.items = items;
+        for (int i = 0; i < items.length; i++) {
+            if (LanguageUtils.containSpecial(items[i].getValue())) {
+                setSpecial(true);
+                break;
+            }
+        }
+    }
+
+    public boolean isTranslatable() {
+        return isTranslatable;
+    }
+
+    public boolean isSpecial() {
+        return isSpecial;
+    }
+
+    public void setSpecial(boolean special) {
+        isSpecial = special;
+        for (StringInfo item : items) {
+            item.setSpecial(special);
+        }
+    }
+
+    public void setTranslatable(boolean isTranslatable) {
+        this.isTranslatable = isTranslatable;
+        for (StringInfo item : items) {
+            item.setTranslatable(isTranslatable);
+        }
+    }
+
+    public void setStringAttribute(Map<String, String> attribute) {
+        this.attribute = attribute;
+    }
+
+    public Map<String, String> getAttribute() {
+        return attribute;
+    }
+
+    public void loadFromDefault(StringArrayInfo defaultStringArrayInfo) {
+        if (defaultStringArrayInfo != null) {
+            this.isTranslatable = defaultStringArrayInfo.isTranslatable();
+            this.attribute = defaultStringArrayInfo.getAttribute();
+        }
+    }
+}
