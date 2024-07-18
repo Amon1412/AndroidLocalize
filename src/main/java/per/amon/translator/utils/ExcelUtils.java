@@ -23,7 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static per.amon.translator.utils.CommonUtils.DEFAULT_LANGUAGE;
 
 public class ExcelUtils {
+    private final static int ROW_LANGUAGE = 0;
+    private final static int ROW_LANGUAGE_EN_ROW = 1;
 
+    private final static int COL_APP_NAME_CN = 0;
+    private final static int COL_APP_NAME = 1;
+    private final static int COL_STRING_NAME = 2;
+    private final static int COL_STRING_VALUE_DEFAULT = 3;
+    private final static int COL_STRING_VALUE_CN = 4;
 
     public static Map<String, TranslateInfo> readFromExcel(String excelFilePath, Map<String, TranslateInfo> languageInfos) {
         try {
@@ -32,11 +39,11 @@ public class ExcelUtils {
             Sheet sheet = workbook.getSheetAt(0);
 
             // 读取表头，确定语言
-            Row languageRow = sheet.getRow(0);
-            Row keyRow = sheet.getRow(1);
+            Row rowLanguage = sheet.getRow(ROW_LANGUAGE);
+            Row rowLanguageEn = sheet.getRow(ROW_LANGUAGE_EN_ROW);
             List<String> languages = new ArrayList<>();
-            for (int cellNum = 1; cellNum < languageRow.getLastCellNum(); cellNum++) {
-                Cell cell = keyRow.getCell(cellNum);
+            for (int cellNum = COL_STRING_NAME+1; cellNum < rowLanguage.getLastCellNum(); cellNum++) {
+                Cell cell = rowLanguageEn.getCell(cellNum);
                 if (cell == null) {
                     continue;
                 }
@@ -55,10 +62,10 @@ public class ExcelUtils {
             }
 
             // 读取每行数据
-            for (int rowNum = 2; rowNum <= sheet.getLastRowNum(); rowNum++) {
+            for (int rowNum = ROW_LANGUAGE_EN_ROW+1; rowNum <= sheet.getLastRowNum(); rowNum++) {
                 Row row = sheet.getRow(rowNum);
-                String name = row.getCell(0).getStringCellValue();
-                for (int cellNum = 1; cellNum < row.getLastCellNum(); cellNum++) {
+                String name = row.getCell(COL_STRING_NAME).getStringCellValue();
+                for (int cellNum = COL_STRING_VALUE_DEFAULT; cellNum < row.getLastCellNum(); cellNum++) {
                     Cell cell = row.getCell(cellNum);
                     if (cell == null) {
                         continue;
@@ -138,11 +145,11 @@ public class ExcelUtils {
             Sheet sheet = workbook.getSheetAt(0);
 
             // 读取表头，确定语言
-            Row languageRow = sheet.getRow(0);
-            Row keyRow = sheet.getRow(1);
+            Row rowLanguage = sheet.getRow(ROW_LANGUAGE);
+            Row rowLanguageEn = sheet.getRow(ROW_LANGUAGE_EN_ROW);
             List<String> languages = new ArrayList<>();
-            for (int cellNum = 1; cellNum < languageRow.getLastCellNum(); cellNum++) {
-                Cell cell = keyRow.getCell(cellNum);
+            for (int cellNum = COL_STRING_VALUE_DEFAULT; cellNum < rowLanguage.getLastCellNum(); cellNum++) {
+                Cell cell = rowLanguageEn.getCell(cellNum);
                 if (cell == null) {
                     continue;
                 }
@@ -161,10 +168,10 @@ public class ExcelUtils {
             }
 
             // 读取每行数据
-            for (int rowNum = 2; rowNum <= sheet.getLastRowNum(); rowNum++) {
+            for (int rowNum = ROW_LANGUAGE_EN_ROW+1; rowNum <= sheet.getLastRowNum(); rowNum++) {
                 Row row = sheet.getRow(rowNum);
-                String name = row.getCell(0).getStringCellValue();
-                for (int cellNum = 1; cellNum < row.getLastCellNum(); cellNum++) {
+                String name = row.getCell(COL_STRING_NAME).getStringCellValue();
+                for (int cellNum = COL_STRING_VALUE_DEFAULT; cellNum < row.getLastCellNum(); cellNum++) {
                     Cell cell = row.getCell(cellNum);
                     if (cell == null) {
                         continue;
@@ -201,25 +208,25 @@ public class ExcelUtils {
             String time = now.format(formatter);
             String excelFilePath = jarDir + "/" + appName + "_translate_result_"+time+".xlsx";
 
+            // 读取应用名 中英文
+            String appNameCN = "";
+            try {
+                appNameCN = languageInfos.get("zh-cn").getStringInfo("app_name").getValue();
+            } catch (Exception e) {
+               try {
+                   ListOrderedMap<String, StringInfo> stringInfoMap = languageInfos.get("zh-cn").getStringInfoMap();
+                   appNameCN = stringInfoMap.getValue(0).getValue();
+               } catch (Exception e1) {
+                   appNameCN = appName;
+               }
+            }
+
             Workbook workbook = new XSSFWorkbook();
 
             Sheet sheet = workbook.createSheet("字符串翻译结果");
             AtomicInteger rowNum = new AtomicInteger();
             Row l0 = sheet.createRow(rowNum.getAndIncrement());
             Row l1 = sheet.createRow(rowNum.getAndIncrement());
-
-            CellStyle commonStyle = workbook.createCellStyle();
-            // 设置边框样式
-            commonStyle.setBorderTop(BorderStyle.THIN); // 上边框
-            commonStyle.setBorderBottom(BorderStyle.THIN); // 下边框
-            commonStyle.setBorderLeft(BorderStyle.THIN); // 左边框
-            commonStyle.setBorderRight(BorderStyle.THIN); // 右边框
-
-            // 设置边框颜色
-            commonStyle.setTopBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 上边框颜色
-            commonStyle.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 下边框颜色
-            commonStyle.setLeftBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 左边框颜色
-            commonStyle.setRightBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 右边框颜色
 
             TranslateInfo defaultTranslateInfo = languageInfos.get(DEFAULT_LANGUAGE);
             ListOrderedMap<String, StringInfo> defaultTranslations;
@@ -229,46 +236,47 @@ public class ExcelUtils {
                 defaultTranslations = defaultTranslateInfo.getStringInfoMap();
                 defaultTranslateInfo.getStringInfoMap().forEach((k, v) -> {
                     Row row = sheet.createRow(rowNum.getAndIncrement());
-                    Cell cell = row.createCell(0);
-                    cell.setCellValue(k);
-                    cell.setCellStyle(commonStyle);
+                    Cell cell = row.createCell(COL_STRING_NAME);
+                    setCell(workbook, cell, k);
                 });
             } else {
                 // 写入左侧的表头和value的值
                 defaultTranslations = defaultTranslateInfo.getStringInfoMap();
 
-                Cell cell01 = l0.createCell(1);
-                cell01.setCellValue(LanguageUtils.getLanguageName(DEFAULT_LANGUAGE));
-                cell01.setCellStyle(commonStyle);
+                Cell cell01 = l0.createCell(COL_STRING_VALUE_DEFAULT);
+                setCell(workbook, cell01, LanguageUtils.getLanguageName(DEFAULT_LANGUAGE));
 
-                Cell cell11 = l1.createCell(1);
-                cell11.setCellValue(DEFAULT_LANGUAGE);
-                cell11.setCellStyle(commonStyle);
+                Cell cell11 = l1.createCell(COL_STRING_VALUE_DEFAULT);
+                setCell(workbook, cell11, DEFAULT_LANGUAGE);
 
                 defaultTranslations.forEach((k, v) -> {
                     Row row = sheet.createRow(rowNum.getAndIncrement());
-                    Cell cellx0 = row.createCell(0);
-                    cellx0.setCellValue(k);
-                    cellx0.setCellStyle(commonStyle);
-                    Cell cellx1 = row.createCell(1);
-                    cellx1.setCellValue(v.getFinalValue());
-                    cellx1.setCellStyle(commonStyle);
+                    Cell cellx0 = row.createCell(COL_STRING_NAME);
+                    setCell(workbook, cellx0, k);
+
+                    Cell cellx1 = row.createCell(COL_STRING_VALUE_DEFAULT);
+                    setCell(workbook, cellx1, v.getFinalValue());
                 });
             }
 
             // 遍历所有语言数据，写入
-            AtomicInteger colNum = new AtomicInteger(2);
+            AtomicInteger colNum = new AtomicInteger(COL_STRING_VALUE_DEFAULT+1);
 
+            String finalAppNameCN = appNameCN;
             languageInfos.forEach((language, translateInfo) -> {
                 if (language.equals(DEFAULT_LANGUAGE)) {
                     return;
                 }
+                if (translateInfo.getStringInfoMap().isEmpty()) {
+                    return;
+                }
+
                 Cell cell0x = l0.createCell(colNum.get());
-                cell0x.setCellValue(translateInfo.getLanguageName());
-                cell0x.setCellStyle(commonStyle);
+                setCell(workbook, cell0x, LanguageUtils.getLanguageName(language));
+
                 Cell cell1x = l1.createCell(colNum.get());
-                cell1x.setCellValue(language);
-                cell1x.setCellStyle(commonStyle);
+                setCell(workbook, cell1x, language);
+
 
                 for (int i = 0; i < defaultTranslations.keyList().size(); i++) {
                     String name = defaultTranslations.get(i);
@@ -276,6 +284,13 @@ public class ExcelUtils {
                         Row row = sheet.getRow(i + 2);
                         Cell cell = row.createCell(colNum.get());
                         setCell(workbook, cell, translateInfo.getStringInfo(name));
+
+                        // 写入应用名
+                        Cell cell0 = row.createCell(COL_APP_NAME_CN);
+                        setCell(workbook, cell0, finalAppNameCN);
+
+                        Cell cell1 = row.createCell(COL_APP_NAME);
+                        setCell(workbook, cell1, appName);
                     }
                 }
                 colNum.getAndIncrement();
@@ -291,12 +306,43 @@ public class ExcelUtils {
     }
 
     private static void setCell(Workbook workbook, Cell cell, StringInfo stringInfo) {
+        CellStyle style = getBaseStyle(workbook);
+        cell.setCellStyle(style);
+        setCell(cell, style, stringInfo);
+    }
+
+    private static void setCell(Workbook workbook, Cell cell, String string) {
+        CellStyle style = getBaseStyle(workbook);
+        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        cell.setCellStyle(style);
+        cell.setCellValue(string);
+    }
+
+    private static CellStyle getBaseStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         // 设置字体颜色
         Font font = workbook.createFont();
         // 设置背景颜色
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        // 设置边框样式
+        style.setBorderTop(BorderStyle.THIN); // 上边框
+        style.setBorderBottom(BorderStyle.THIN); // 下边框
+        style.setBorderLeft(BorderStyle.THIN); // 左边框
+        style.setBorderRight(BorderStyle.THIN); // 右边框
 
+        // 设置边框颜色
+        style.setTopBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 上边框颜色
+        style.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 下边框颜色
+        style.setLeftBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 左边框颜色
+        style.setRightBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 右边框颜色
+
+        style.setFont(font);
+        return style;
+    }
+
+    private static void setCell(Cell cell, CellStyle style, StringInfo stringInfo) {
+        // 从style中获取font
+        Font font = cell.getSheet().getWorkbook().getFontAt(style.getFontIndex());
         // 被替换的用蓝色
         if (CommonUtils.notNullOrEmpty(stringInfo.getReplacedValue())) {
             font.setColor(IndexedColors.BLUE.getIndex());
@@ -326,21 +372,6 @@ public class ExcelUtils {
                 && !CommonUtils.notNullOrEmpty(stringInfo.getValue())) {
             style.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
         }
-
-        // 设置边框样式
-        style.setBorderTop(BorderStyle.THIN); // 上边框
-        style.setBorderBottom(BorderStyle.THIN); // 下边框
-        style.setBorderLeft(BorderStyle.THIN); // 左边框
-        style.setBorderRight(BorderStyle.THIN); // 右边框
-
-        // 设置边框颜色
-        style.setTopBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 上边框颜色
-        style.setBottomBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 下边框颜色
-        style.setLeftBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 左边框颜色
-        style.setRightBorderColor(IndexedColors.GREY_80_PERCENT.getIndex()); // 右边框颜色
-
-        style.setFont(font);
-        cell.setCellStyle(style);
     }
 
 }
