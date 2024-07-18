@@ -101,6 +101,10 @@
 - todo：5.stringArray 没有带上属性
 
 
+### `translator_v1.0.8.jar`
+- feature：1.优化生成excel的格式，方便后续整理成一个文档发送给客户
+
+
 ## 三. 参数说明
 - `isOverwrite`: 是否覆盖已有翻译，需要对原字符串特殊处理的情况下使用，例如去除双引号
 - `isGenerateExcelMode`: 是否只生成excel，不进行翻译与替换
